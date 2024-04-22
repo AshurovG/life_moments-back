@@ -1,0 +1,4 @@
+env
+life_moments/__pycache__
+life_moments_app/__pycache__
+life_moments_app/migrations
