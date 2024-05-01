@@ -118,6 +118,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 AUTH_USER_MODEL = 'life_moments_app.CustomUser'
 
+REDIS_HOST = 'localhost'
+REDIS_PORT = 6379
+
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
