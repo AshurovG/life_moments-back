@@ -31,7 +31,6 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
 
     def create(self, request):
-        print('req is', request.data)
         if self.model_class.objects.filter(email=request.data['email']).exists():
             return Response({'status': 'Exist'}, status=400)
         serializer = self.serializer_class(data=request.data)
@@ -55,7 +54,6 @@ class UserViewSet(viewsets.ModelViewSet):
                 "registration_date": currentDate
             }
 
-            print('user data is ', user_data)
             response = Response(user_data, status=status.HTTP_201_CREATED)
             response.set_cookie("session_id", random_key)
             return response
