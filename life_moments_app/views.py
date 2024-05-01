@@ -3,7 +3,7 @@ from datetime import date
 from life_moments_app.models import *
 from life_moments_app.serializers import *
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.permissions import AllowAny
 from rest_framework import viewsets
 from rest_framework import status
@@ -59,28 +59,26 @@ class UserViewSet(viewsets.ModelViewSet):
             response.set_cookie("session_id", random_key)
             return response
         return Response({'status': 'Error', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['Post'])
-@permission_classes([AllowAny])
-def login_view(request):
-    username = request.data.get('email')
-    password = request.data.get('password')
-    user = authenticate(request, email=username, password=password)
     
-    if user is not None:
-        print(user)
-        random_key = str(uuid.uuid4())
-        session_storage.set(random_key, username)
-        user_data = {
-            "id": user.id,
-            "email": user.email,
-            "full_name": user.full_name,
-            "phone_number": user.phone_number,
-            "password": user.password,
-            "is_superuser": user.is_superuser,
-        }
-        response = Response(user_data, status=status.HTTP_201_CREATED)
-        response.set_cookie("session_id", random_key, samesite="Lax", max_age=30 * 24 * 60 * 60)
-        return response
-    else:
-        return HttpResponse("login failed", status=400)
+    # @action(detail=False, methods=['post'])
+    def login(self, request):
+        email = request.data.get('email')
+        password = request.data.get('password')
+        user = authenticate(request, email=email, password=password)
+        
+        if user is not None:
+            random_key = str(uuid.uuid4())
+            session_storage.set(random_key, email)
+            user_data = {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "profile_picture": user.profile_picture,
+                "rating": user.rating,
+                "registration_date": user.registration_date,
+            }
+            response = Response(user_data, status=status.HTTP_201_CREATED)
+            response.set_cookie("session_id", random_key, samesite="Lax", max_age=30 * 24 * 60 * 60)
+            return response
+        else:
+            return Response({"error": "login failed"}, status=status.HTTP_400_BAD_REQUEST)
