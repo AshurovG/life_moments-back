@@ -83,6 +83,16 @@ class UserViewSet(viewsets.ModelViewSet):
         else:
             return Response({"error": "login failed"}, status=status.HTTP_400_BAD_REQUEST)
         
+    # @permission_classes([IsAuth])
+    def logout(self, request):
+        ssid = request.COOKIES["session_id"]
+        if session_storage.exists(ssid):
+            session_storage.delete(ssid)
+            response_data = {'status': 'Success'}
+        else:
+            response_data = {'status': 'Error', 'message': 'Session does not exist'}
+        return Response(response_data)
+        
     def info(self, request):
         try:
             ssid = request.COOKIES["session_id"]
