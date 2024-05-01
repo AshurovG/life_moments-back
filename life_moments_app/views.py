@@ -82,3 +82,23 @@ class UserViewSet(viewsets.ModelViewSet):
             return response
         else:
             return Response({"error": "login failed"}, status=status.HTTP_400_BAD_REQUEST)
+        
+    def info(self, request):
+        try:
+            ssid = request.COOKIES["session_id"]
+            if session_storage.exists(ssid):
+                email = session_storage.get(ssid).decode('utf-8')
+                user = CustomUser.objects.get(email=email)
+                user_data = {
+                    "user_id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "profile_picture": user.profile_picture,
+                    "rating": user.rating,
+                    "registration_date": user.registration_date
+                }
+                return Response(user_data, status=status.HTTP_200_OK)
+            else:
+                return Response({'status': 'Error', 'message': 'Session does not exist'})
+        except:
+            return Response({'status': 'Error', 'message': 'Cookies are not transmitted'})
