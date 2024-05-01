@@ -2,8 +2,10 @@ from django.shortcuts import render
 from datetime import date
 from life_moments_app.models import *
 from life_moments_app.serializers import *
+# from life_moments_app.permissions import *
+from life_moments_app.permissions import IsAuth
 from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes, action
+from rest_framework.decorators import api_view, permission_classes, action, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework import viewsets
 from rest_framework import status
@@ -20,7 +22,6 @@ def GetBooks(request):
     books = Books.objects
     serializer = BookSerializer(books, many=True)
     return Response(serializer.data)
-
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
@@ -60,7 +61,6 @@ class UserViewSet(viewsets.ModelViewSet):
             return response
         return Response({'status': 'Error', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
-    # @action(detail=False, methods=['post'])
     def login(self, request):
         email = request.data.get('email')
         password = request.data.get('password')
@@ -82,8 +82,7 @@ class UserViewSet(viewsets.ModelViewSet):
             return response
         else:
             return Response({"error": "login failed"}, status=status.HTTP_400_BAD_REQUEST)
-        
-    # @permission_classes([IsAuth])
+
     def logout(self, request):
         ssid = request.COOKIES["session_id"]
         if session_storage.exists(ssid):
@@ -112,3 +111,4 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response({'status': 'Error', 'message': 'Session does not exist'})
         except:
             return Response({'status': 'Error', 'message': 'Cookies are not transmitted'})
+
