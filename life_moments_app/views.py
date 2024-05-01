@@ -62,13 +62,13 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({'status': 'Error', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     
     def login(self, request):
-        email = request.data.get('email')
+        username = request.data.get('username')
         password = request.data.get('password')
-        user = authenticate(request, email=email, password=password)
+        user = authenticate(request, username=username, password=password)
         
         if user is not None:
             random_key = str(uuid.uuid4())
-            session_storage.set(random_key, email)
+            session_storage.set(random_key, username)
             user_data = {
                 "id": user.id,
                 "username": user.username,

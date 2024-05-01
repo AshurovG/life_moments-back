@@ -9,28 +9,38 @@ class Books(models.Model):
         managed = True
         db_table = 'books'
 
-class NewUserManager(UserManager):
-    def create_user(self,email,password=None, **extra_fields):
-        if not email:
-            raise ValueError('User must have an email address')
+# class NewUserManager(UserManager):
+#     def create_user(self,email,password=None, **extra_fields):
+#         if not email:
+#             raise ValueError('User must have an email address')
         
-        email = self.normalize_email(email) 
-        user = self.model(email=email, **extra_fields) 
+#         email = self.normalize_email(email) 
+#         user = self.model(email=email, **extra_fields) 
+#         user.set_password(password)
+#         user.save(using=self.db)
+#         return user
+#     class Meta:
+#         managed = True
+
+class NewUserManager(UserManager):
+    def create_user(self, username, password=None, **extra_fields):
+        if not username:
+            raise ValueError('User must have a username')
+        
+        user = self.model(username=username, **extra_fields)
         user.set_password(password)
         user.save(using=self.db)
         return user
-    class Meta:
-        managed = True
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
-    username = models.CharField(max_length=30)
+    username = models.CharField(max_length=30, unique=True)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=128)
     profile_picture = models.TextField(default='')
     rating = models.IntegerField(default=0)
     registration_date = models.DateField(blank=True, null=True)
 
-    USERNAME_FIELD = 'email'
+    USERNAME_FIELD = 'username'
 
     objects =  NewUserManager()
 
