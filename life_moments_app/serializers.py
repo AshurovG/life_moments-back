@@ -8,10 +8,10 @@ class BookSerializer(serializers.ModelSerializer):
         model = Books
         fields = "__all__"
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CustomUser
-        fields = "__all__"
+# class UserSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = CustomUser
+#         fields = "__all__"
 
 class UserSerializer(serializers.ModelSerializer):
     rating = serializers.IntegerField(required=False)
