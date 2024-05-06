@@ -34,7 +34,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def create(self, request):
         if self.model_class.objects.filter(email=request.data['email']).exists():
             return Response({'status': 'Exist'}, status=400)
-        
+        print(request.FILES)
         if 'profile_picture' in request.FILES:
             file = request.FILES['profile_picture']
             
@@ -67,7 +67,7 @@ class UserViewSet(viewsets.ModelViewSet):
                 )
                 
                 random_key = str(uuid.uuid4())
-                session_storage.set(random_key, serializer.data['email'])
+                session_storage.set(random_key, serializer.data['username'])
 
                 user_data = {
                     "username": request.data['username'],
@@ -118,21 +118,23 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(response_data)
         
     def info(self, request):
-        try:
-            ssid = request.COOKIES["session_id"]
-            if session_storage.exists(ssid):
-                username = session_storage.get(ssid).decode('utf-8')
-                user = CustomUser.objects.get(username=username)
-                user_data = {
-                    "user_id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                    "profile_picture": user.profile_picture,
-                    "rating": user.rating,
-                    "registration_date": user.registration_date
-                }
-                return Response(user_data, status=status.HTTP_200_OK)
-            else:
-                return Response({'status': 'Error', 'message': 'Session does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-        except:
-            return Response({'status': 'Error', 'message': 'Cookies were not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
+        print(request.COOKIES)
+        # try:
+        ssid = request.COOKIES["session_id"]
+        if session_storage.exists(ssid):
+            username = session_storage.get(ssid).decode('utf-8')
+            print("username isssss ", username)
+            user = CustomUser.objects.get(username=username)
+            user_data = {
+                "user_id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "profile_picture": user.profile_picture,
+                "rating": user.rating,
+                "registration_date": user.registration_date
+            }
+            return Response(user_data, status=status.HTTP_200_OK)
+        else:
+            return Response({'status': 'Error', 'message': 'Session does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+        # except:
+        #     return Response({'status': 'Error', 'message': 'Cookies were not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
