@@ -18,4 +18,4 @@ class UserSerializer(serializers.ModelSerializer):
     registration_date = serializers.DateField(required=False)
     class Meta:
         model = CustomUser
-        fields = ['username', 'email', 'password', 'profile_picture', 'rating', 'registration_date']
+        fields = ['username', 'email', 'password', 'description', 'profile_picture', 'rating', 'registration_date']
