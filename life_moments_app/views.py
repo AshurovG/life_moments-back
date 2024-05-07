@@ -33,6 +33,11 @@ class MinioClientSingleton:
                              secure=False)
         self.bucket_name = 'life-moments'
 
+def generate_unique_file_name(original_file_name, user_id):
+    file_extension = original_file_name.split('.')[-1]
+    unique_file_name = f"{uuid.uuid4()}_{user_id}.{file_extension}"
+    return unique_file_name
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
@@ -178,7 +183,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
             if 'profile_picture' in request.FILES:
                 file = request.FILES['profile_picture']
-                file_name = file.name
+                file_name = generate_unique_file_name(file.name, user.id)
                 file_path = "http://localhost:9000/life-moments/" + file_name
                 print(file_path)
             
