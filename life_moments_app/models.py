@@ -39,7 +39,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
 class Moments(models.Model):
     title = models.CharField(max_length=100)
-    description = models.TextField(default='')
+    description = models.TextField(default='', blank=True, null=True)
     publication_date = models.DateField()
     image = models.TextField(default='')
     id_author = models.ForeignKey('CustomUser', on_delete=models.CASCADE,  db_column='id_author', related_name='author_moment', default=1)

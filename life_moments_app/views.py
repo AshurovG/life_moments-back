@@ -222,6 +222,7 @@ class MomentViewSet(viewsets.ModelViewSet):
     def create(self, request):
         try:
             ssid = request.COOKIES["session_id"]
+            print(request.data)
             if session_storage.exists(ssid):
                 username = session_storage.get(ssid).decode('utf-8')
                 user = CustomUser.objects.get(username=username)
@@ -232,6 +233,7 @@ class MomentViewSet(viewsets.ModelViewSet):
                     bucket_name = minio_client.bucket_name
                     file_name = generate_unique_file_name(file.name)
                     file_path = "http://localhost:9000/life-moments/" + file_name
+                    print(file_path)
                     try:
                         client.put_object(bucket_name, file_name, file, length=file.size, content_type=file.content_type)
                     except Exception as e:
@@ -240,13 +242,15 @@ class MomentViewSet(viewsets.ModelViewSet):
                 currentDate = datetime.now().strftime('%Y-%m-%d')
                 moment_data = {
                     'title': request.data.get('title'),
-                    'description': request.data.get('description'),
                     'image': file_path,
                     'publication_date': currentDate,
                     'id_author': user.id,
                 }
 
-                serializer = MomentSerializer(data=moment_data)
+                if request.data.get('description') is not None:
+                    moment_data['description'] = request.data.get('description')
+
+                serializer = MomentSerializer(data=moment_data, partial=True)
 
                 if serializer.is_valid():
                     moment = serializer.save()
