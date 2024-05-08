@@ -33,9 +33,9 @@ class MinioClientSingleton:
                              secure=False)
         self.bucket_name = 'life-moments'
 
-def generate_unique_file_name(original_file_name, user_id):
+def generate_unique_file_name(original_file_name):
     file_extension = original_file_name.split('.')[-1]
-    unique_file_name = f"{uuid.uuid4()}_{user_id}.{file_extension}"
+    unique_file_name = f"{uuid.uuid4()}.{file_extension}"
     return unique_file_name
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -58,7 +58,8 @@ class UserViewSet(viewsets.ModelViewSet):
                         secure=False)
 
             bucket_name = 'life-moments'
-            file_name = file.name
+            file_name = generate_unique_file_name(file.name)
+            # file_name = file.name
             file_path = "http://localhost:9000/life-moments/" + file_name
             print(file_path)
         
@@ -155,54 +156,58 @@ class UserViewSet(viewsets.ModelViewSet):
     
     def update(self, request):
         try:
-            print(request.COOKIES)
             ssid = request.COOKIES["session_id"]
             if session_storage.exists(ssid):
                 old_username = session_storage.get(ssid).decode('utf-8')
+                print(old_username)
                 user = CustomUser.objects.get(username=old_username)
-                if 'username' in request.data and request.data['username'] != old_username:
-                    new_username = request.data['username']
-                    # Удаление старой сессии
-                    session_storage.delete(ssid)
-                    # Создание новой сессии с новым ключом
-                    session_storage.set(ssid, new_username)
-                
-            if self.model_class.objects.filter(email=request.data['email']).exclude(id=user.id).exists() or \
-            self.model_class.objects.filter(username=request.data['username']).exclude(id=user.id).exists():
-                return Response({'status': 'Exist'}, status=status.HTTP_400_BAD_REQUEST)
-            
-            minio_client = MinioClientSingleton()
-            client = minio_client.client
-            bucket_name = minio_client.bucket_name
-            
-            old_file_path = user.profile_picture
-            if old_file_path and 'profile_picture' in request.FILES:
-                old_file_name = old_file_path.split('/')[-1]
-                client.remove_object(bucket_name, old_file_name)
-                print("Файл успешно удален из Minio.", old_file_name)
 
+            email = request.data.get('email')
+            username = request.data.get('username')
+            if (email):
+                if self.model_class.objects.filter(email=email).exclude(id=user.id).exists():
+                    return Response({'status': 'email exists'}, status=status.HTTP_400_BAD_REQUEST)
+            if (username):
+                if self.model_class.objects.filter(username=username).exclude(id=user.id).exists():
+                    return Response({'status': 'username exists'}, status=status.HTTP_400_BAD_REQUEST)
+            
             if 'profile_picture' in request.FILES:
-                file = request.FILES['profile_picture']
-                file_name = generate_unique_file_name(file.name, user.id)
-                file_path = "http://localhost:9000/life-moments/" + file_name
-                print(file_path)
-            
-            try:
-                client.put_object(bucket_name, file_name, file, length=file.size, content_type=file.content_type)
-                print("Файл успешно загружен в Minio.")
-                request.data['profile_picture'] = file_path
-                serializer = self.serializer_class(user, data=request.data, partial=True)
+                minio_client = MinioClientSingleton()
+                client = minio_client.client
+                bucket_name = minio_client.bucket_name
+                old_file_path = user.profile_picture
+                if old_file_path and 'profile_picture' in request.FILES:
+                    old_file_name = old_file_path.split('/')[-1]
+                    client.remove_object(bucket_name, old_file_name)
+                    print("Файл успешно удален из Minio.")
 
-                if serializer.is_valid():
-                    serializer.save() # Обновление пользователя в базе данных
-                    return Response(serializer.data, status=status.HTTP_200_OK)
-                else:
-                    print(False)
-            except Exception as e:
-                print("Ошибка при загрузке файла в Minio:", str(e))
-                return HttpResponseServerError('An error occurred during file upload.')
+                if 'profile_picture' in request.FILES:
+                    file = request.FILES['profile_picture']
+                    file_name = generate_unique_file_name(file.name)
+                    file_path = "http://localhost:9000/life-moments/" + file_name
+                
+                try:
+                    client.put_object(bucket_name, file_name, file, length=file.size, content_type=file.content_type)
+                    print("Файл успешно загружен в Minio.")
+                    request.data['profile_picture'] = file_path
+                except Exception as e:
+                    print("Ошибка при загрузке файла в Minio:", str(e))
+                    return HttpResponseServerError('An error occurred during file upload.')
+                
+            serializer = self.serializer_class(user, data=request.data, partial=True)
 
-            return Response({'status': 'Error', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
+            if serializer.is_valid():
+                serializer.save() # Обновление пользователя в базе данных
+                if (username):
+                    if 'username' in request.data and request.data['username'] != old_username:
+                        new_username = request.data['username']
+                        # Удаление старой сессии
+                        session_storage.delete(ssid)
+                        # Создание новой сессии с новым ключом, но с тем же значением
+                        session_storage.set(ssid, new_username)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            else:
+                print(serializer.errors)
+                return Response({'status': 'Error', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'status': 'Error', 'session was not found': str(e)}, status=status.HTTP_403_FORBIDDEN)
