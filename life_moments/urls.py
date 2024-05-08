@@ -11,7 +11,9 @@ api_urlpatterns = [
     path('user/login', views.UserViewSet.as_view({'post': 'login'}), name='user_login'),
     path('user/logout', views.UserViewSet.as_view({'post': 'logout'}), name='user_logout'),
     path('user/info', views.UserViewSet.as_view({'get': 'info'}), name='user_info'),
-    path('user/update', views.UserViewSet.as_view({'put': 'update'}), name='user_info'),
+    path('user/update', views.UserViewSet.as_view({'put': 'update'}), name='user_update'),
+
+    path('moments/create', views.MomentViewSet.as_view({'post': 'create'}), name='moment_create')
 ]
 
 urlpatterns = [

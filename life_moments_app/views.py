@@ -211,3 +211,57 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response({'status': 'Error', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'status': 'Error', 'session was not found': str(e)}, status=status.HTTP_403_FORBIDDEN)
+        
+class MomentViewSet(viewsets.ModelViewSet):
+    queryset = Moments.objects.all()
+    serializer_class = MomentSerializer
+    model_class = Moments
+    authentication_classes = []
+    permission_classes = [IsAuth]
+
+    def create(self, request):
+        if 'profile_picture' in request.FILES:
+            file = request.FILES['profile_picture']
+            minio_client = MinioClientSingleton()
+            client = minio_client.client
+            bucket_name = minio_client.bucket_name
+            file_name = generate_unique_file_name(file.name)
+            file_path = "http://localhost:9000/life-moments/" + file_name
+
+        try:
+            client.put_object(bucket_name, file_name, file, length=file.size, content_type=file.content_type)
+            print("Файл успешно загружен в Minio.")
+            request.data['profile_picture'] = file_path
+            serializer = self.serializer_class(data=request.data)
+
+            if serializer.is_valid():
+
+                currentDate = datetime.now().strftime('%Y-%m-%d')
+                self.model_class.objects.create_user(
+                    username=serializer.data['username'],
+                    email=serializer.data['email'],
+                    password=serializer.data['password'],
+                    profile_picture=file_path,
+                    rating=0, # TODO: Сделать функцию расчета рейтинга
+                    registration_date=currentDate,
+                )
+                
+                random_key = str(uuid.uuid4())
+                session_storage.set(random_key, serializer.data['username'])
+
+                user_data = {
+                    "username": request.data['username'],
+                    "email": request.data['email'],
+                    "profile_picture": file_path,
+                    "rating": 0, # TODO: Сделать функцию расчета рейтинга
+                    "registration_date": currentDate
+                }
+                
+                response = Response(user_data, status=status.HTTP_201_CREATED)
+                response.set_cookie("session_id", random_key)
+                return response
+        except Exception as e:
+            print("Ошибка при загрузке файла в Minio:", str(e))
+            return HttpResponseServerError('An error occurred during file upload.')
+
+        return Response({'status': 'Error', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)

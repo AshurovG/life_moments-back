@@ -42,7 +42,7 @@ class Moments(models.Model):
     description = models.TextField(default='')
     publication_date = models.DateField()
     image = models.TextField(default='')
-    id_autor = models.ForeignKey('CustomUser', on_delete=models.CASCADE,  db_column='id_autor', related_name='autor_moment')
+    id_author = models.ForeignKey('CustomUser', on_delete=models.CASCADE,  db_column='id_author', related_name='author_moment', default=1)
 
     class Meta:
         managed = True
@@ -51,8 +51,8 @@ class Moments(models.Model):
 class Comments(models.Model):
     text = models.CharField(max_length=100)
     publication_date = models.DateField()
-    id_autor = models.ForeignKey('CustomUser', on_delete=models.CASCADE,  db_column='id_autor', related_name='autor_comment')
-    id_moment = models.ForeignKey('Moments', models.DO_NOTHING, db_column='id_moment')
+    id_author = models.ForeignKey('CustomUser', on_delete=models.CASCADE,  db_column='id_author', related_name='author_comment', default=1)
+    id_moment = models.ForeignKey('Moments', models.DO_NOTHING, db_column='id_moment', default=1)
 
     class Meta:
         managed = True
@@ -60,8 +60,8 @@ class Comments(models.Model):
 
 class Subscriptions(models.Model):
     subscription_date = models.DateField()
-    id_autor = models.ForeignKey('CustomUser', on_delete=models.CASCADE,  db_column='id_autor', related_name='autor_subscription')
-    id_subscriber = models.ForeignKey('CustomUser', on_delete=models.CASCADE,  db_column='id_subscriber', related_name='subscriber_subscription')
+    id_author = models.ForeignKey('CustomUser', on_delete=models.CASCADE,  db_column='id_author', related_name='author_subscription', default=1)
+    id_subscriber = models.ForeignKey('CustomUser', on_delete=models.CASCADE,  db_column='id_subscriber', related_name='subscriber_subscription', default=1)
 
     class Meta:
         managed = True
@@ -69,7 +69,7 @@ class Subscriptions(models.Model):
 
 class Likes(models.Model):
     creation_date = models.DateField()
-    id_autor = models.ForeignKey('CustomUser', on_delete=models.CASCADE,  db_column='id_autor', related_name='autor_like')
+    id_author = models.ForeignKey('CustomUser', on_delete=models.CASCADE,  db_column='id_author', related_name='author_like', default=1)
     id_moment = models.ForeignKey('Moments', models.DO_NOTHING, db_column='id_moment', blank=True, null=True, related_name='moment_like')
     id_comment = models.ForeignKey('Comments', models.DO_NOTHING, db_column='id_comment', blank=True, null=True, related_name='comment_like')
 
@@ -79,7 +79,7 @@ class Likes(models.Model):
 
 class Tags(models.Model):
     title = models.CharField(max_length=100)
-    id_moment = models.ForeignKey('Moments', models.DO_NOTHING, db_column='id_moment')
+    id_moment = models.ForeignKey('Moments', models.DO_NOTHING, db_column='id_moment', default=1)
 
     class Meta:
         managed = True
