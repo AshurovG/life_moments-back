@@ -6,7 +6,7 @@ session_storage = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDI
      
 class IsAuth(permissions.BasePermission): 
     def has_permission(self, request, view): 
-        access_token = request.COOKIES["session_id"]
+        access_token = request.COOKIES.get("session_id", None)
  
         if access_token is None: 
             return False 
