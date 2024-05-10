@@ -38,7 +38,7 @@ def generate_unique_file_name(original_file_name):
     unique_file_name = f"{uuid.uuid4()}.{file_extension}"
     return unique_file_name
 
-class UserViewSet(viewsets.ModelViewSet):
+class AuthViewSet(viewsets.ModelViewSet):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
     model_class = CustomUser
@@ -144,6 +144,7 @@ class UserViewSet(viewsets.ModelViewSet):
                     "user_id": user.id,
                     "username": user.username,
                     "email": user.email,
+                    "description": user.description,
                     "profile_picture": user.profile_picture,
                     "rating": user.rating,
                     "registration_date": user.registration_date
@@ -211,6 +212,74 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response({'status': 'Error', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'status': 'Error', 'session was not found': str(e)}, status=status.HTTP_403_FORBIDDEN)
+        
+    def detailed(self, request):
+        user_id = request.query_params.get('id', None)
+
+        if (user_id is None):
+            return Response({'status': 'Error', 'message': 'id was not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = CustomUser.objects.get(id=user_id)
+            moments = Moments.objects.filter(id_author=user.id)
+            serialized_moments = MomentSerializer(moments, many=True).data
+
+            subscribers = Subscriptions.objects.filter(id_author=user.id)
+            serialized_subscribers = SubscriptionSerializer(subscribers, many=True).data
+
+            subscriptions = Subscriptions.objects.filter(id_subscriber=user.id)
+            serialized_subscriptions = SubscriptionSerializer(subscriptions, many=True).data
+
+            moment_data = {
+                "moments": serialized_moments,
+                "subscribers": serialized_subscribers,
+                "subscriptions": serialized_subscriptions
+            }
+            return Response(moment_data, status=status.HTTP_200_OK)
+        except:
+            return Response({'status': 'Error', 'message': f'id {user_id} was not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = CustomUser.objects.all()
+    serializer_class = UserSerializer
+    model_class = CustomUser
+    authentication_classes = []
+    permission_classes = [IsAuth]
+
+    def getSubscribers(self, request):
+        user_id = request.query_params.get('id', None)
+
+        if (user_id is None):
+            return Response({'status': 'Error', 'message': 'id was not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            subscriptions = Subscriptions.objects.filter(id_author=user_id)
+            subscriber_ids = [subscription.id_subscriber.id for subscription in subscriptions]
+            subscribers = CustomUser.objects.filter(id__in=subscriber_ids)
+            serialized_subscribers = SubscriptionUserSerializer(subscribers, many=True).data
+            return Response(serialized_subscribers, status=status.HTTP_200_OK)
+
+        except:
+            return Response({'status': 'Error', 'message': f'id {user_id} was not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+    def getSubscriptions(self, request):
+        user_id = request.query_params.get('id', None)
+
+        if (user_id is None):
+            return Response({'status': 'Error', 'message': 'id was not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            subscriptions = Subscriptions.objects.filter(id_subscriber=user_id)
+            subscriber_ids = [subscription.id_author.id for subscription in subscriptions]
+            subscribers = CustomUser.objects.filter(id__in=subscriber_ids)
+            serialized_subscribers = SubscriptionUserSerializer(subscribers, many=True).data
+            return Response(serialized_subscribers, status=status.HTTP_200_OK)
+
+        except:
+            return Response({'status': 'Error', 'message': f'id {user_id} was not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    
         
 class MomentViewSet(viewsets.ModelViewSet):
     queryset = Moments.objects.all()

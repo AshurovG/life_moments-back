@@ -9,7 +9,16 @@ class UserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['username', 'email', 'password', 'description', 'profile_picture', 'rating', 'registration_date']
 
+class SubscriptionUserSerializer(UserSerializer):
+    class Meta(UserSerializer.Meta):
+        fields = ['username', 'profile_picture', 'rating']
+
 class MomentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Moments
+        fields = "__all__"
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscriptions
         fields = "__all__"
