@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class SubscriptionUserSerializer(UserSerializer):
     class Meta(UserSerializer.Meta):
-        fields = ['id', 'username', 'profile_picture', 'rating']
+        fields = ['id', 'username', 'profile_picture', 'rating', 'description']
 
 class MomentSerializer(serializers.ModelSerializer):
     class Meta:

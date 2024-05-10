@@ -18,7 +18,8 @@ api_urlpatterns = [
     path('user/subscriptions', views.UserViewSet.as_view({'get': 'getSubscriptions'}, name='user_subscriptions')),
 
     path('moments/create', views.MomentViewSet.as_view({'post': 'create'}), name='moment_create'),
-    path('moments/detailed', views.MomentViewSet.as_view({'get': 'getMoment'}), name='moment_detailed')
+    path('moments/detailed', views.MomentViewSet.as_view({'get': 'getMoment'}), name='moment_detailed'),
+    path('moments/like', views.MomentViewSet.as_view({'get': 'makeLike'}), name='moment_like')
 ]
 
 urlpatterns = [

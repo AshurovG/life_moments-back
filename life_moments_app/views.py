@@ -222,6 +222,8 @@ class AuthViewSet(viewsets.ModelViewSet):
 
         try:
             user = CustomUser.objects.get(id=user_id)
+            serialized_user = SubscriptionUserSerializer(user).data
+
             moments = Moments.objects.filter(id_author=user.id)
             serialized_moments = MomentSerializer(moments, many=True).data
 
@@ -232,6 +234,7 @@ class AuthViewSet(viewsets.ModelViewSet):
             serialized_subscriptions = SubscriptionSerializer(subscriptions, many=True).data
 
             moment_data = {
+                "user": serialized_user,
                 "moments": serialized_moments,
                 "subscribers": serialized_subscribers,
                 "subscriptions": serialized_subscriptions
@@ -338,29 +341,59 @@ class MomentViewSet(viewsets.ModelViewSet):
         if moment_id is None:
             return Response({'status': 'Error', 'message': 'id was not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
         
-        # try:
-        moment = Moments.objects.get(id=moment_id)
-        serialized_moment = MomentSerializer(moment).data
+        try:
+            moment = Moments.objects.get(id=moment_id)
+            serialized_moment = MomentSerializer(moment).data
 
-        author = CustomUser.objects.get(id=moment.id_author.id)
-        serialized_author = SubscriptionUserSerializer(author).data
+            author = CustomUser.objects.get(id=moment.id_author.id)
+            serialized_author = SubscriptionUserSerializer(author).data
 
-        # Предварительная выборка лайков для комментариев
-        comments_with_likes = Comments.objects.filter(id_moment=moment_id).prefetch_related('comment_like')
+            # Предварительная выборка лайков для комментариев
+            comments_with_likes = Comments.objects.filter(id_moment=moment_id).prefetch_related('comment_like')
 
-        serialized_comments = CommentSerializer(comments_with_likes, many=True).data
+            serialized_comments = CommentSerializer(comments_with_likes, many=True).data
 
-        likes = Likes.objects.filter(id_moment=moment_id)
-        serialized_likes = LikeSerializer(likes, many=True).data
+            likes = Likes.objects.filter(id_moment=moment_id)
+            serialized_likes = LikeSerializer(likes, many=True).data
 
-        moment_data = {
-            "author": serialized_author,
-            "moment": serialized_moment,
-            "likes": serialized_likes,
-            "comments": serialized_comments
-        }
+            moment_data = {
+                "author": serialized_author,
+                "moment": serialized_moment,
+                "likes": serialized_likes,
+                "comments": serialized_comments
+            }
 
-        return Response(moment_data, status=status.HTTP_200_OK)
+            return Response(moment_data, status=status.HTTP_200_OK)
 
-        # except:
-        #     return Response({'status': 'Error', 'message': f'id {moment_id} was not found'}, status=status.HTTP_404_NOT_FOUND)
+        except:
+            return Response({'status': 'Error', 'message': f'id {moment_id} was not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+    def makeLike(self, request):
+        author_id = request.query_params.get('author_id', None)
+        moment_id = request.query_params.get('moment_id', None)
+        comment_id = request.query_params.get('comment_id', None)
+
+        if moment_id is None and comment_id is None or author_id is None:
+            return Response({'status': 'Error', 'message': 'comment_id and moment_id were not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            currentDate = datetime.now().strftime('%Y-%m-%d')
+            like_data = {
+                'creation_date': currentDate,
+                'id_author': author_id,
+            }
+            if moment_id is not None:
+                like_data['id_moment'] = moment_id
+            else:
+                like_data['id_comment'] = comment_id
+
+
+            serializer = LikeSerializer(data=like_data, partial=True)
+
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'status': 'success'}, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except: 
+            return Response({'status': 'Error', 'message': 'data was not found'}, status=status.HTTP_404_NOT_FOUND)
