@@ -29,13 +29,18 @@ class LikeSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 class CommentSerializer(serializers.ModelSerializer):
-    # likes_count = serializers.IntegerField()
     likes = serializers.SerializerMethodField()
+    author = serializers.SerializerMethodField()
 
     class Meta:
         model = Comments
-        fields = ['text', 'publication_date', 'id_author', 'id_moment', 'likes']
+        fields = ['id', 'text', 'publication_date', 'id_author', 'id_moment', 'likes', 'author']
 
     def get_likes(self, obj):
-        # Возвращаем список идентификаторов лайков для комментария
         return [like.id_author.id for like in obj.comment_like.all()]
+
+    def get_author(self, obj):
+        # Получаем объект CustomUser по id_author и сериализуем его
+        author = CustomUser.objects.get(id=obj.id_author.id)
+        return SubscriptionUserSerializer(author).data
+

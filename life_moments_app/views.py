@@ -338,25 +338,29 @@ class MomentViewSet(viewsets.ModelViewSet):
         if moment_id is None:
             return Response({'status': 'Error', 'message': 'id was not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
         
-        try:
-            moment = Moments.objects.get(id=moment_id)
-            serialized_moment = MomentSerializer(moment).data
+        # try:
+        moment = Moments.objects.get(id=moment_id)
+        serialized_moment = MomentSerializer(moment).data
 
-            # Предварительная выборка лайков для комментариев
-            comments_with_likes = Comments.objects.filter(id_moment=moment_id).prefetch_related('comment_like')
+        author = CustomUser.objects.get(id=moment.id_author.id)
+        serialized_author = SubscriptionUserSerializer(author).data
 
-            serialized_comments = CommentSerializer(comments_with_likes, many=True).data
+        # Предварительная выборка лайков для комментариев
+        comments_with_likes = Comments.objects.filter(id_moment=moment_id).prefetch_related('comment_like')
 
-            likes = Likes.objects.filter(id_moment=moment_id)
-            serialized_likes = LikeSerializer(likes, many=True).data
+        serialized_comments = CommentSerializer(comments_with_likes, many=True).data
 
-            moment_data = {
-                "moment": serialized_moment,
-                "likes": serialized_likes,
-                "comments": serialized_comments
-            }
+        likes = Likes.objects.filter(id_moment=moment_id)
+        serialized_likes = LikeSerializer(likes, many=True).data
 
-            return Response(moment_data, status=status.HTTP_200_OK)
+        moment_data = {
+            "author": serialized_author,
+            "moment": serialized_moment,
+            "likes": serialized_likes,
+            "comments": serialized_comments
+        }
 
-        except:
-            return Response({'status': 'Error', 'message': f'id {moment_id} was not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response(moment_data, status=status.HTTP_200_OK)
+
+        # except:
+        #     return Response({'status': 'Error', 'message': f'id {moment_id} was not found'}, status=status.HTTP_404_NOT_FOUND)
