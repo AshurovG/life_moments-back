@@ -406,3 +406,30 @@ class MomentViewSet(viewsets.ModelViewSet):
 
         except: 
             return Response({'status': 'Error', 'message': 'data was not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+    def removeLike(self, request):
+        author_id = request.query_params.get('author_id', None)
+        moment_id = request.query_params.get('moment_id', None)
+        comment_id = request.query_params.get('comment_id', None)
+
+        if moment_id is None and comment_id is None:
+            return Response({'status': 'Error', 'message': 'comment_id and moment_id were not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if author_id is None:
+            return Response({'status': 'Error', 'message': 'author_id was not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if moment_id and not Likes.objects.filter(Q(id_author=author_id), Q(id_moment=moment_id)).exists():
+            return Response({'status': 'Error', 'message': 'Like was not found'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if comment_id and not Likes.objects.filter(Q(id_author=author_id), Q(id_comment=comment_id)).exists():
+            return Response({'status': 'Error', 'message': 'Like was not found'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            if (moment_id):
+                Likes.objects.filter(Q(id_author=author_id), Q(id_moment=moment_id)).delete()
+                return Response({'status': 'success'}, status=status.HTTP_200_OK)
+            else:
+                Likes.objects.filter(Q(id_author=author_id), Q(id_comment=comment_id)).delete()
+                return Response({'status': 'success'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'status': 'Error', 'message': 'data was not found'}, status=status.HTTP_404_NOT_FOUND)
