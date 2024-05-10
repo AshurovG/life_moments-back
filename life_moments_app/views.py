@@ -15,7 +15,7 @@ import uuid
 from django.conf import settings
 import redis
 from minio import Minio
-from django.db.models import Count
+from django.db.models import Q
 
 session_storage = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
@@ -373,8 +373,17 @@ class MomentViewSet(viewsets.ModelViewSet):
         moment_id = request.query_params.get('moment_id', None)
         comment_id = request.query_params.get('comment_id', None)
 
-        if moment_id is None and comment_id is None or author_id is None:
+        if moment_id is None and comment_id is None:
             return Response({'status': 'Error', 'message': 'comment_id and moment_id were not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if author_id is None:
+            return Response({'status': 'Error', 'message': 'author_id was not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if moment_id and Likes.objects.filter(Q(id_author=author_id), Q(id_moment=moment_id)).exists():
+            return Response({'status': 'Error', 'message': 'Like already exists'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if comment_id and Likes.objects.filter(Q(id_author=author_id), Q(id_comment=comment_id)).exists():
+            return Response({'status': 'Error', 'message': 'Like already exists'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             currentDate = datetime.now().strftime('%Y-%m-%d')
