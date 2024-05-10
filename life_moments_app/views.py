@@ -15,6 +15,7 @@ import uuid
 from django.conf import settings
 import redis
 from minio import Minio
+from django.db.models import Count
 
 session_storage = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
@@ -330,3 +331,32 @@ class MomentViewSet(viewsets.ModelViewSet):
 
         except:
             return Response({'status': 'Error'}, status=status.HTTP_400_BAD_REQUEST)
+        
+    def getMoment(self, request):
+        moment_id = request.query_params.get('id', None)
+
+        if moment_id is None:
+            return Response({'status': 'Error', 'message': 'id was not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            moment = Moments.objects.get(id=moment_id)
+            serialized_moment = MomentSerializer(moment).data
+
+            # Предварительная выборка лайков для комментариев
+            comments_with_likes = Comments.objects.filter(id_moment=moment_id).prefetch_related('comment_like')
+
+            serialized_comments = CommentSerializer(comments_with_likes, many=True).data
+
+            likes = Likes.objects.filter(id_moment=moment_id)
+            serialized_likes = LikeSerializer(likes, many=True).data
+
+            moment_data = {
+                "moment": serialized_moment,
+                "likes": serialized_likes,
+                "comments": serialized_comments
+            }
+
+            return Response(moment_data, status=status.HTTP_200_OK)
+
+        except:
+            return Response({'status': 'Error', 'message': f'id {moment_id} was not found'}, status=status.HTTP_404_NOT_FOUND)
