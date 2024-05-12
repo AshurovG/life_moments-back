@@ -282,6 +282,52 @@ class UserViewSet(viewsets.ModelViewSet):
 
         except:
             return Response({'status': 'Error', 'message': f'id {user_id} was not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+    def subscribe(self, request):
+        author_id = request.query_params.get('author_id', None)
+        subscriber_id = request.query_params.get('subscriber_id', None)
+
+        if subscriber_id is None:
+            return Response({'status': 'Error', 'message': 'subscriber_id was not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if author_id is None:
+            return Response({'status': 'Error', 'message': 'author_id was not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if subscriber_id and Subscriptions.objects.filter(Q(id_author=author_id), Q(id_subscriber=subscriber_id)).exists():
+            return Response({'status': 'Error', 'message': 'Subscription already exists'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        
+        try:
+            currentDate = datetime.now().strftime('%Y-%m-%d')
+            subscription_data = {
+                'subscription_date': currentDate,
+                'id_subscriber': subscriber_id,
+                'id_author': author_id,
+            }
+
+            serializer = SubscriptionSerializer(data=subscription_data, partial=True)
+
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'status': 'success'}, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except: 
+            return Response({'status': 'Error', 'message': 'data was not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+    def unsubscribe(self, request):
+        id = request.query_params.get('id', None)
+
+        if id is None:
+            return Response({'status': 'Error', 'message': 'subscriptions was not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            if Subscriptions.objects.filter(id=id).exists():
+                Subscriptions.objects.filter(id=id).delete()
+                return Response({'status': 'success'}, status=status.HTTP_200_OK)
+            else:
+                return Response({'status': 'Error', 'message': 'id was not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'status': 'Error', 'message': 'An error occurred'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) #TODO возможно стоит поменять код ошибки
     
     
         
@@ -466,4 +512,4 @@ class MomentViewSet(viewsets.ModelViewSet):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         except: 
-            return Response({'status': 'Error', 'message': 'data was not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'status': 'Error'}, status=status.HTTP_404_NOT_FOUND)
