@@ -349,9 +349,10 @@ class MomentViewSet(viewsets.ModelViewSet):
             serialized_author = SubscriptionUserSerializer(author).data
 
             # Предварительная выборка лайков для комментариев
-            comments_with_likes = Comments.objects.filter(id_moment=moment_id).prefetch_related('comment_like')
-
+            # comments_with_likes = Comments.objects.filter(id_moment=moment_id).prefetch_related('comment_like')
+            comments_with_likes = Comments.objects.filter(id_moment=moment_id).prefetch_related('comment_like').order_by('-publication_date')
             serialized_comments = CommentSerializer(comments_with_likes, many=True).data
+            print(serialized_comments)
 
             likes = Likes.objects.filter(id_moment=moment_id)
             serialized_likes = LikeSerializer(likes, many=True).data
