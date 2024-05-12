@@ -412,7 +412,7 @@ class MomentViewSet(viewsets.ModelViewSet):
         moment_id = request.query_params.get('moment_id', None)
         comment_id = request.query_params.get('comment_id', None)
 
-        if moment_id is None and comment_id is None:
+        if moment_id is None and comment_id is None: #TODO разделить проверку на 2 части
             return Response({'status': 'Error', 'message': 'comment_id and moment_id were not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
         
         if author_id is None:
@@ -432,4 +432,37 @@ class MomentViewSet(viewsets.ModelViewSet):
                 Likes.objects.filter(Q(id_author=author_id), Q(id_comment=comment_id)).delete()
                 return Response({'status': 'success'}, status=status.HTTP_200_OK)
         except Exception as e:
+            return Response({'status': 'Error', 'message': 'data was not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+    def leaveComment(self, request):
+        author_id = request.query_params.get('author_id', None)
+        moment_id = request.query_params.get('moment_id', None)
+        text = request.data.get('text')
+
+        if moment_id is None:
+            return Response({'status': 'Error', 'message': 'moment_id was not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if author_id is None:
+            return Response({'status': 'Error', 'message': 'author_id was not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if text is None or text.strip() == '':
+            return Response({'status': 'Error', 'message': 'Text is required and cannot be empty'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            currentDate = datetime.now().strftime('%Y-%m-%d')
+            comment_data = {
+                'text': text,
+                'publication_date': currentDate,
+                'id_moment': moment_id,
+                'id_author': author_id,
+            }
+
+            serializer = CommentSerializer(data=comment_data, partial=True)
+
+            if serializer.is_valid():
+                serializer.save()
+                return Response({'status': 'success'}, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        except: 
             return Response({'status': 'Error', 'message': 'data was not found'}, status=status.HTTP_404_NOT_FOUND)
