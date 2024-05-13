@@ -16,6 +16,7 @@ from django.conf import settings
 import redis
 from minio import Minio
 from django.db.models import Q
+import json
 
 session_storage = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
@@ -49,7 +50,6 @@ class AuthViewSet(viewsets.ModelViewSet):
     def create(self, request):
         if self.model_class.objects.filter(email=request.data['email']).exists() or self.model_class.objects.filter(username=request.data['username']).exists():
             return Response({'status': 'Exist'}, status=400)
-        print(request.FILES)
         if 'profile_picture' in request.FILES:
             file = request.FILES['profile_picture']
             
@@ -62,11 +62,9 @@ class AuthViewSet(viewsets.ModelViewSet):
             file_name = generate_unique_file_name(file.name)
             # file_name = file.name
             file_path = "http://localhost:9000/life-moments/" + file_name
-            print(file_path)
         
         try:
             client.put_object(bucket_name, file_name, file, length=file.size, content_type=file.content_type)
-            print("Файл успешно загружен в Minio.")
             request.data['profile_picture'] = file_path
             serializer = self.serializer_class(data=request.data)
 
@@ -106,7 +104,6 @@ class AuthViewSet(viewsets.ModelViewSet):
         username = request.data.get('username')
         password = request.data.get('password')
         user = authenticate(request, username=username, password=password)
-        print(username, password)
         
         if user is not None:
             random_key = str(uuid.uuid4())
@@ -139,7 +136,6 @@ class AuthViewSet(viewsets.ModelViewSet):
             ssid = request.COOKIES["session_id"]
             if session_storage.exists(ssid):
                 username = session_storage.get(ssid).decode('utf-8')
-                print("username isssss ", username)
                 user = CustomUser.objects.get(username=username)
                 user_data = {
                     "user_id": user.id,
@@ -161,7 +157,6 @@ class AuthViewSet(viewsets.ModelViewSet):
             ssid = request.COOKIES["session_id"]
             if session_storage.exists(ssid):
                 old_username = session_storage.get(ssid).decode('utf-8')
-                print(old_username)
                 user = CustomUser.objects.get(username=old_username)
 
             email = request.data.get('email')
@@ -181,7 +176,6 @@ class AuthViewSet(viewsets.ModelViewSet):
                 if old_file_path and 'profile_picture' in request.FILES:
                     old_file_name = old_file_path.split('/')[-1]
                     client.remove_object(bucket_name, old_file_name)
-                    print("Файл успешно удален из Minio.")
 
                 if 'profile_picture' in request.FILES:
                     file = request.FILES['profile_picture']
@@ -190,7 +184,6 @@ class AuthViewSet(viewsets.ModelViewSet):
                 
                 try:
                     client.put_object(bucket_name, file_name, file, length=file.size, content_type=file.content_type)
-                    print("Файл успешно загружен в Minio.")
                     request.data['profile_picture'] = file_path
                 except Exception as e:
                     print("Ошибка при загрузке файла в Minio:", str(e))
@@ -209,7 +202,6 @@ class AuthViewSet(viewsets.ModelViewSet):
                         session_storage.set(ssid, new_username)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             else:
-                print(serializer.errors)
                 return Response({'status': 'Error', 'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'status': 'Error', 'session was not found': str(e)}, status=status.HTTP_403_FORBIDDEN)
@@ -340,7 +332,6 @@ class MomentViewSet(viewsets.ModelViewSet):
     def create(self, request):
         try:
             ssid = request.COOKIES["session_id"]
-            print(request.data)
             if session_storage.exists(ssid):
                 username = session_storage.get(ssid).decode('utf-8')
                 user = CustomUser.objects.get(username=username)
@@ -351,7 +342,6 @@ class MomentViewSet(viewsets.ModelViewSet):
                     bucket_name = minio_client.bucket_name
                     file_name = generate_unique_file_name(file.name)
                     file_path = "http://localhost:9000/life-moments/" + file_name
-                    print(file_path)
                     try:
                         client.put_object(bucket_name, file_name, file, length=file.size, content_type=file.content_type)
                     except Exception as e:
@@ -372,6 +362,11 @@ class MomentViewSet(viewsets.ModelViewSet):
 
                 if serializer.is_valid():
                     moment = serializer.save()
+
+                    tags = json.loads(request.data.get('tags', '[]'))
+                    if tags:
+                        for tag in tags:
+                            Tags.objects.create(title=tag, id_moment=moment)
                     return Response({'status': 'success', 'moment_id': moment.id}, status=status.HTTP_201_CREATED)
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -397,7 +392,6 @@ class MomentViewSet(viewsets.ModelViewSet):
             # comments_with_likes = Comments.objects.filter(id_moment=moment_id).prefetch_related('comment_like')
             comments_with_likes = Comments.objects.filter(id_moment=moment_id).prefetch_related('comment_like').order_by('-publication_date')
             serialized_comments = CommentSerializer(comments_with_likes, many=True).data
-            print(serialized_comments)
 
             likes = Likes.objects.filter(id_moment=moment_id)
             serialized_likes = LikeSerializer(likes, many=True).data
