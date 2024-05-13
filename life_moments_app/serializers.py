@@ -49,27 +49,21 @@ class CommentSerializer(serializers.ModelSerializer):
         # Получаем объект CustomUser по id_author и сериализуем его
         author = CustomUser.objects.get(id=obj.id_author.id)
         return SubscriptionUserSerializer(author).data
-    
-# class MomentSerializer(serializers.ModelSerializer):
-#     likes = serializers.SerializerMethodField()
-
-#     class Meta:
-#         model = Moments
-#         fields = ['id', 'title', 'image', 'description', 'publication_date', 'id_author', 'likes']
-
-
-#     def get_likes(self, obj):
-#         print('dfd')
-#         return [like.id_author.id for like in obj.moment_like.all()]
 
 class MomentSerializer(serializers.ModelSerializer):
+    author = serializers.SerializerMethodField()
     likes = serializers.SerializerMethodField()
     tags = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField()
 
     class Meta:
         model = Moments
-        fields = ['id', 'title', 'image', 'description', 'publication_date', 'id_author', 'likes', 'tags', 'comments']
+        fields = ['id', 'title', 'image', 'description', 'publication_date', 'id_author', 'author', 'likes', 'tags', 'comments']
+
+    def get_author(self, obj):
+        # Получаем объект CustomUser по id_author и сериализуем его
+        author = CustomUser.objects.get(id=obj.id_author.id)
+        return SubscriptionUserSerializer(author).data
 
     def get_tags(self, obj):
         # Возвращает список идентификаторов тегов, связанных с моментом
@@ -83,13 +77,3 @@ class MomentSerializer(serializers.ModelSerializer):
     def get_likes(self, obj):
         # Возвращает список идентификаторов авторов лайков, связанных с моментом
         return [like.id_author.id for like in obj.moment_like.all()]
-
-
-# class MomentSerializer(serializers.ModelSerializer):
-#     tags = TagSerializer(many=True, read_only=True)
-#     likes = LikeSerializer(many=True, read_only=True)
-#     comments = CommentSerializer(many=True, read_only=True)
-
-#     class Meta:
-#         model = Moments
-#         fields = ['id', 'title', 'image', 'description', 'publication_date', 'id_author', 'tags', 'likes', 'comments']

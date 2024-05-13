@@ -416,8 +416,8 @@ class MomentViewSet(viewsets.ModelViewSet):
             moment_data = {
                 "author": serialized_author,
                 "moment": serialized_moment,
-                "likes": serialized_likes,
-                "comments": serialized_comments
+                # "likes": serialized_likes,
+                # "comments": serialized_comments
             }
 
             return Response(moment_data, status=status.HTTP_200_OK)
