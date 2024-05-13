@@ -19,6 +19,7 @@ api_urlpatterns = [
     path('user/subscribe', views.UserViewSet.as_view({'post': 'subscribe'}), name='user_subscribe'),
     path('user/unsubscribe', views.UserViewSet.as_view({'delete': 'unsubscribe'}), name='user_unsubscribe'),
 
+    path('moments', views.MomentViewSet.as_view({'get': 'getMoments'}), name='moment_get'),
     path('moments/create', views.MomentViewSet.as_view({'post': 'create'}), name='moment_create'),
     path('moments/detailed', views.MomentViewSet.as_view({'get': 'getMoment'}), name='moment_detailed'),
     path('moments/like', views.MomentViewSet.as_view({'post': 'makeLike'}), name='moment_like'),

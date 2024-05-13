@@ -17,6 +17,7 @@ import redis
 from minio import Minio
 from django.db.models import Q
 import json
+from django.core.paginator import Paginator
 
 session_storage = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
@@ -328,6 +329,22 @@ class MomentViewSet(viewsets.ModelViewSet):
     model_class = Moments
     authentication_classes = []
     permission_classes = [IsAuth]
+
+    def getMoments(self, request):
+        moments = Moments.objects.all()
+
+        offset = int(request.query_params.get('offset', 0))
+        limit = int(request.query_params.get('limit', 10))
+
+        page_number = offset // limit + 1
+
+        paginator = Paginator(moments, limit)
+
+        page = paginator.get_page(page_number)
+        serializer = MomentSerializer(page, many=True)
+        print(serializer)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def create(self, request):
         try:

@@ -51,8 +51,8 @@ class Moments(models.Model):
 class Comments(models.Model):
     text = models.CharField(max_length=100)
     publication_date = models.DateField()
-    id_author = models.ForeignKey('CustomUser', on_delete=models.CASCADE,  db_column='id_author', related_name='author_comment', default=1)
-    id_moment = models.ForeignKey('Moments', models.DO_NOTHING, db_column='id_moment', default=1)
+    id_author = models.ForeignKey('CustomUser', on_delete=models.CASCADE,  db_column='id_author', related_name='moment_like', default=1)
+    id_moment = models.ForeignKey('Moments', models.DO_NOTHING, db_column='id_moment', default=1, related_name='moment_comment')
 
     class Meta:
         managed = True
@@ -79,7 +79,7 @@ class Likes(models.Model):
 
 class Tags(models.Model):
     title = models.CharField(max_length=100)
-    id_moment = models.ForeignKey('Moments', models.DO_NOTHING, db_column='id_moment', default=1)
+    id_moment = models.ForeignKey('Moments', models.DO_NOTHING, db_column='id_moment', default=1, related_name='moment_tag')
 
     class Meta:
         managed = True
