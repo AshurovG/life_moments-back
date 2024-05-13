@@ -329,7 +329,6 @@ class UserViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'status': 'Error', 'message': 'An error occurred'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) #TODO возможно стоит поменять код ошибки
     
-    
         
 class MomentViewSet(viewsets.ModelViewSet):
     queryset = Moments.objects.all()
@@ -513,3 +512,24 @@ class MomentViewSet(viewsets.ModelViewSet):
 
         except: 
             return Response({'status': 'Error'}, status=status.HTTP_404_NOT_FOUND)
+        
+    def getLikes(self, request):
+        id = request.query_params.get('id', None)
+
+        if id is None:
+            return Response({'status': 'Error', 'message': 'id was not transmitted'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not Moments.objects.filter(id=id).exists():
+            return Response({'status': 'Error', 'message': 'Moment with this id does not exist'}, status=status.HTTP_404_NOT_FOUND)
+        
+        likes = Likes.objects.filter(id_moment=id)
+
+        # Извлекаем id_author из каждой записи лайка
+        author_ids = likes.values_list('id_author', flat=True)
+
+        # Получаем пользователей CustomUser по id_author
+        users = CustomUser.objects.filter(id__in=author_ids)
+
+        serializer = SubscriptionUserSerializer(users, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
