@@ -331,20 +331,29 @@ class MomentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuth]
 
     def getMoments(self, request):
-        moments = Moments.objects.all()
+        try:
+            ssid = request.COOKIES["session_id"]
+            if session_storage.exists(ssid):
+                username = session_storage.get(ssid).decode('utf-8')
+                user = CustomUser.objects.get(username=username)
+            
+            moments = Moments.objects.all()
+            moments = moments.exclude(id_author=user.id)
+            moments = moments.order_by('-publication_date')
 
-        offset = int(request.query_params.get('offset', 0))
-        limit = int(request.query_params.get('limit', 10))
+            offset = int(request.query_params.get('offset', 0))
+            limit = int(request.query_params.get('limit', 10))
 
-        page_number = offset // limit + 1
+            page_number = offset // limit + 1
 
-        paginator = Paginator(moments, limit)
+            paginator = Paginator(moments, limit)
 
-        page = paginator.get_page(page_number)
-        serializer = MomentSerializer(page, many=True)
-        print(serializer)
+            page = paginator.get_page(page_number)
+            serializer = MomentSerializer(page, many=True)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except:
+            return Response({'status': 'Error'}, status=status.HTTP_400_BAD_REQUEST)
 
     def create(self, request):
         try:
