@@ -30,6 +30,7 @@ api_urlpatterns = [
     path('moments/comment/likes', views.MomentViewSet.as_view({'get': 'getCommentLikes'}), name='comment_likes'),
     path('moments/likes', views.MomentViewSet.as_view({'get': 'getMomentLikes'}), name='moment_likes'),
     path('moments/search', views.MomentViewSet.as_view({'get': 'searchMoments'}), name='moment_search'),
+    path('moments/random', views.MomentViewSet.as_view({'get': 'getRandomMoments'}), name='moment_random'),
 
 ]
 

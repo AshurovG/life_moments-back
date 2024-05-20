@@ -373,7 +373,6 @@ class UserViewSet(viewsets.ModelViewSet):
 
             return Response(combined_response, status=status.HTTP_200_OK)
         except Exception as e:
-            print(e)  # Выводим ошибку для отладки
             return Response({'status': 'Error'}, status=status.HTTP_400_BAD_REQUEST)
         
     def searchUsers(self, request):
@@ -643,10 +642,8 @@ class MomentViewSet(viewsets.ModelViewSet):
         try:
             search_query = request.GET.get('query', '')
             
-            # Фильтрация тегов по запросу
             tags = Tags.objects.filter(title__icontains=search_query)
             
-            # Инициализация списка для хранения моментов по тегу
             moments_by_tag = []
             
             for tag in tags:
@@ -655,9 +652,34 @@ class MomentViewSet(viewsets.ModelViewSet):
                 serialized_moments = MomentSerializer(moments, many=True).data
                 moments_by_tag.extend(serialized_moments)
             
-            print(len(moments_by_tag))
-            return Response(moments_by_tag)  # Возвращаем моменты в ответе
+            return Response(moments_by_tag, status=200) 
             
+        except Exception as e:
+            return Response({'error': str(e)}, status=400)
+
+
+    def getRandomMoments(self, request):
+        try:
+            ssid = request.COOKIES["session_id"]
+            if session_storage.exists(ssid):
+                username = session_storage.get(ssid).decode('utf-8')
+                user = CustomUser.objects.get(username=username)
+
+                # Получаем все моменты, созданные другими пользователями
+                moments = Moments.objects.exclude(id_author=user.id)
+
+                # Выбираем случайные 6 моментов
+                random_moments = moments.order_by('?')[:6]
+                
+                serialized_moments = MomentSerializer(random_moments, many=True).data
+
+                return Response(serialized_moments, status=200)
+                # return Response([moment.to_dict() for moment in random_moments], safe=False)
+
+            else:
+                # Обработка случая, когда cookie не существует
+                return Response({'error': 'Cookie не найден'}, status=400)
+
         except Exception as e:
             return Response({'error': str(e)}, status=400)
 
