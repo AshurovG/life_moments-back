@@ -77,3 +77,11 @@ class MomentSerializer(serializers.ModelSerializer):
     def get_likes(self, obj):
         # Возвращает список идентификаторов авторов лайков, связанных с моментом
         return [like.id_author.id for like in obj.moment_like.all()]
+    
+class MomentSimpleSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    image = serializers.URLField()
+
+    class Meta:
+        model = Moments
+        fields = ['id', 'image']

@@ -18,6 +18,8 @@ from minio import Minio
 from django.db.models import Q
 import json
 from django.core.paginator import Paginator
+from datetime import timedelta
+from django.utils import timezone
 
 session_storage = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
@@ -321,7 +323,80 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response({'status': 'Error', 'message': 'id was not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'status': 'Error', 'message': 'An error occurred'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) #TODO возможно стоит поменять код ошибки
-    
+        
+    # def getLastActions(self, request):
+    #     try:
+    #         ssid = request.COOKIES["session_id"]
+    #         if session_storage.exists(ssid):
+    #             username = session_storage.get(ssid).decode('utf-8')
+    #             user = CustomUser.objects.get(username=username)
+
+    #         current_datetime = timezone.now()
+
+    #         three_days_ago = current_datetime - timedelta(days=3)
+    #         print(three_days_ago)
+
+    #         subscriptions = Subscriptions.objects.filter(id_author=user.id, subscription_date__range=(three_days_ago, current_datetime))
+
+    #         serialized_subscriptions = SubscriptionSerializer(subscriptions, many=True).data
+    #         return Response(serialized_subscriptions, status=status.HTTP_200_OK)
+    #     except Exception as e:
+    #         print(e)  # Выводим ошибку для отладки
+    #         return Response({'status': 'Error'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def getLastActions(self, request):
+        try:
+            ssid = request.COOKIES["session_id"]
+            if session_storage.exists(ssid):
+                username = session_storage.get(ssid).decode('utf-8')
+                user = CustomUser.objects.get(username=username)
+
+            current_datetime = timezone.now()
+            three_days_ago = current_datetime - timedelta(days=3)
+
+            subscriptions = Subscriptions.objects.filter(id_author=user.id, subscription_date__range=(three_days_ago, current_datetime))
+            serialized_subscriptions = SubscriptionSerializer(subscriptions, many=True).data
+
+            combined_subscriptions = []
+            for subscription in serialized_subscriptions:
+                subscriber_user = CustomUser.objects.get(id=subscription['id_subscriber'])
+                combined_subscription = {
+                    'subscription': subscription,
+                    'user': SubscriptionUserSerializer(subscriber_user).data
+                }
+                combined_subscriptions.append(combined_subscription)
+
+            likes = Likes.objects.filter(creation_date__range=(three_days_ago, current_datetime))
+            serialized_likes = LikeSerializer(likes, many=True).data
+
+            combined_likes = []
+
+            for like in serialized_likes:
+                if like['id_moment'] is not None:
+                    current_moment = Moments.objects.get(id=like['id_moment'])
+                    if current_moment.id_author.id == user.id:
+                        current_user = CustomUser.objects.get(id=like['id_author'])
+                        if (current_user.id != user.id):
+                            combined_item = {
+                                'like': like,
+                                'user': SubscriptionUserSerializer(current_user).data,
+                                'moment': MomentSimpleSerializer(current_moment).data,
+
+                            }
+
+                            combined_likes.append(combined_item)
+
+            combined_response = {
+                'subscriptions': combined_subscriptions,
+                'likes': combined_likes
+            }
+
+            return Response(combined_response, status=status.HTTP_200_OK)
+        except Exception as e:
+            print(e)  # Выводим ошибку для отладки
+            return Response({'status': 'Error'}, status=status.HTTP_400_BAD_REQUEST)
+
+        
         
 class MomentViewSet(viewsets.ModelViewSet):
     queryset = Moments.objects.all()
