@@ -638,3 +638,26 @@ class MomentViewSet(viewsets.ModelViewSet):
         serializer = SubscriptionUserSerializer(users, many=True)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def searchMoments(self, request):
+        try:
+            search_query = request.GET.get('query', '')
+            
+            # Фильтрация тегов по запросу
+            tags = Tags.objects.filter(title__icontains=search_query)
+            
+            # Инициализация списка для хранения моментов по тегу
+            moments_by_tag = []
+            
+            for tag in tags:
+                compareId = tag.id_moment.id
+                moments = Moments.objects.filter(id=compareId)
+                serialized_moments = MomentSerializer(moments, many=True).data
+                moments_by_tag.extend(serialized_moments)
+            
+            print(len(moments_by_tag))
+            return Response(moments_by_tag)  # Возвращаем моменты в ответе
+            
+        except Exception as e:
+            return Response({'error': str(e)}, status=400)
+
