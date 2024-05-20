@@ -323,26 +323,6 @@ class UserViewSet(viewsets.ModelViewSet):
                 return Response({'status': 'Error', 'message': 'id was not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({'status': 'Error', 'message': 'An error occurred'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR) #TODO возможно стоит поменять код ошибки
-        
-    # def getLastActions(self, request):
-    #     try:
-    #         ssid = request.COOKIES["session_id"]
-    #         if session_storage.exists(ssid):
-    #             username = session_storage.get(ssid).decode('utf-8')
-    #             user = CustomUser.objects.get(username=username)
-
-    #         current_datetime = timezone.now()
-
-    #         three_days_ago = current_datetime - timedelta(days=3)
-    #         print(three_days_ago)
-
-    #         subscriptions = Subscriptions.objects.filter(id_author=user.id, subscription_date__range=(three_days_ago, current_datetime))
-
-    #         serialized_subscriptions = SubscriptionSerializer(subscriptions, many=True).data
-    #         return Response(serialized_subscriptions, status=status.HTTP_200_OK)
-    #     except Exception as e:
-    #         print(e)  # Выводим ошибку для отладки
-    #         return Response({'status': 'Error'}, status=status.HTTP_400_BAD_REQUEST)
 
     def getLastActions(self, request):
         try:
@@ -395,6 +375,15 @@ class UserViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(e)  # Выводим ошибку для отладки
             return Response({'status': 'Error'}, status=status.HTTP_400_BAD_REQUEST)
+        
+    def searchUsers(self, request):
+        try:
+            search_query = request.GET.get('query', '')
+            users = CustomUser.objects.filter(username__icontains=search_query)
+            serializer = SubscriptionUserSerializer(users, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response({'error': str(e)}, status=400)
 
         
         
